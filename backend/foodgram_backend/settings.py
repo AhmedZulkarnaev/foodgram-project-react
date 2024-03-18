@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework',
     'djoser',
+    # My app
+    'foodgram.apps.FoodgramConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -142,10 +145,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
-
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
 }
+
+DJOSER = {
+    "LOGIN_FIELD": "email",
+    'SERIALIZERS': {
+        'user_create': 'api.serializers.UserCreateSerializer',
+    }
+    }
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+AUTH_USER_MODEL = 'foodgram.User'
