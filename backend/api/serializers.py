@@ -1,5 +1,6 @@
 from djoser.serializers import UserCreateSerializer as DjoserCreateSerializer
-from foodgram.models import User
+from foodgram.models import User, Recipe, Tag, Ingredient
+from rest_framework import serializers
 
 
 class UserCreateSerializer(DjoserCreateSerializer):
@@ -18,3 +19,27 @@ class UserCreateSerializer(DjoserCreateSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = (
+            'id', 'name', 'ingredients', 'image',  'description', 'tag'
+        )
+
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class TagSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name')
+
+
+class IngredientSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = ('id', 'name', 'quantity', 'unit')
