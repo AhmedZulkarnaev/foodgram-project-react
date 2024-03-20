@@ -1,12 +1,12 @@
 from rest_framework import viewsets, permissions
 from .serializers import (
-    RecipeSerializer, TagSerializers, IngredientSerializers
+    RecipeSerializer, TagSerializer, IngredientSerializer
 )
 from foodgram.models import Recipe, Tag, Ingredient
-# from .permissions import IsAdminOrReadOnly
+from .permissions import IsAdminOrReadOnly
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeModelViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -17,11 +17,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
-    serializer_class = TagSerializers
+    serializer_class = TagSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializers
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    serializer_class = IngredientSerializer
+    permission_classes = [IsAdminOrReadOnly]

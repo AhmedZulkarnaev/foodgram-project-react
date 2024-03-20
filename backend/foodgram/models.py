@@ -41,64 +41,40 @@ class User(AbstractUser):
 
 
 class Tag(models.Model):
-    name = models.CharField(
-        max_length=MAX_LENGTH_NAME, verbose_name='Имя тега'
-    )
-    color = models.CharField(max_length=7, verbose_name='Цвет')
-    slug = models.SlugField(unique=True, verbose_name='Slug')
-
-    class Meta:
-        verbose_name = 'Тег'
-        verbose_name_plural = 'Теги'
+    name = models.CharField(max_length=MAX_LENGTH_NAME)
+    color_code = models.CharField(max_length=7)
+    slug = models.SlugField(unique=True)
 
     def __str__(self):
         return self.name
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=100)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    unit = models.CharField(max_length=50)
-
-    class Meta:
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
+    name = models.CharField(max_length=MAX_LENGTH_NAME)
+    measurement_unit = models.CharField(max_length=MAX_LENGTH_NAME)
 
     def __str__(self):
         return self.name
 
 
 class Recipe(models.Model):
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='recipes',
-        verbose_name='Автор публикации'
-    )
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=MAX_LENGTH_NAME)
+    image = models.ImageField(upload_to='recipe_images/')
+    text = models.TextField()
     ingredients = models.ManyToManyField(
-        Ingredient
-    )
-    time = models.DecimalField(max_digits=10, decimal_places=1)
-    image = models.ImageField(upload_to='post_images/')
-    description = models.TextField()
-    tag = models.ManyToManyField(Tag)
-
-    class Meta:
-        verbose_name = 'Рецепт'
-        verbose_name_plural = 'Рецепты'
+        Ingredient, through='IngredientRecipe')
+    tags = models.ManyToManyField(Tag)
+    cooking_time_minutes = models.PositiveIntegerField()
 
     def __str__(self):
         return self.name
 
 
-class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    unit = models.CharField(max_length=MAX_LENGTH_NAME)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    quantity = models.FloatField()
 
     def __str__(self):
-        return (
-            f"{self.quantity} {self.unit} of {self.ingredient.name}"
-            f"for {self.recipe.name}"
-        )
+        return self.ingredient
