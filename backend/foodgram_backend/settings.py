@@ -157,10 +157,6 @@ DJOSER = {
     'SERIALIZERS': {
         'user_create': 'api.serializers.UserCreateSerializer',
     }
-    }
-
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-
-EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+}
 
 AUTH_USER_MODEL = 'foodgram.User'

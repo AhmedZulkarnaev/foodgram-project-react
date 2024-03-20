@@ -4,7 +4,7 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 
 from .validators import validate_username
 from .constants import (
-    MAX_LENGTH_USERNAME, MAX_LENGTH_NAME, MAX_LENGTH_EMAIL
+    MAX_LENGTH_USERNAME, MAX_LENGTH_NAME, MAX_LENGTH_EMAIL, MAX_LENGTH_SLUG
 )
 
 
@@ -41,9 +41,15 @@ class User(AbstractUser):
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=MAX_LENGTH_NAME)
-    color_code = models.CharField(max_length=7)
-    slug = models.SlugField(unique=True)
+    name = models.CharField(
+        "Название", max_length=MAX_LENGTH_NAME, unique=True
+    )
+    color = models.CharField("Цветовой код", max_length=7)
+    slug = models.SlugField("slug", max_length=MAX_LENGTH_SLUG, unique=True)
+
+    class Meta:
+        verbose_name = "тэг"
+        verbose_name_plural = "Тэги"
 
     def __str__(self):
         return self.name
@@ -52,6 +58,10 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(max_length=MAX_LENGTH_NAME)
     measurement_unit = models.CharField(max_length=MAX_LENGTH_NAME)
+
+    class Meta:
+        verbose_name = "ингредиент"
+        verbose_name_plural = "Ингредиенты"
 
     def __str__(self):
         return self.name
@@ -65,7 +75,11 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         Ingredient, through='IngredientRecipe')
     tags = models.ManyToManyField(Tag)
-    cooking_time_minutes = models.PositiveIntegerField()
+    cooking_time = models.PositiveIntegerField()
+
+    class Meta:
+        verbose_name = "рецепт"
+        verbose_name_plural = "Рецепты"
 
     def __str__(self):
         return self.name
