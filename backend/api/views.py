@@ -1,18 +1,26 @@
 from rest_framework import viewsets, permissions
 from .serializers import (
-    RecipeSerializer, TagSerializer, IngredientSerializer
+    RecipeSerializer, TagSerializer, IngredientSerializer, UserCreateSerializer
 )
-from foodgram.models import Recipe, Tag, Ingredient
+from foodgram.models import Recipe, Tag, Ingredient, User
 from .permissions import IsAdminOrReadOnly
+from rest_framework.pagination import LimitOffsetPagination
 
 
-class RecipeModelViewSet(viewsets.ModelViewSet):
+class UserCreateViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserCreateSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    pagination_class = LimitOffsetPagination
+    page_size = 6
 
 
 class TagViewSet(viewsets.ModelViewSet):

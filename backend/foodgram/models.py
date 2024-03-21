@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
-from .validators import validate_username
 from .constants import (
     MAX_LENGTH_USERNAME, MAX_LENGTH_NAME, MAX_LENGTH_EMAIL, MAX_LENGTH_SLUG
 )
@@ -15,7 +14,6 @@ class User(AbstractUser):
         unique=True,
         validators=[
             UnicodeUsernameValidator(),
-            validate_username
         ]
     )
     first_name = models.CharField(
@@ -76,6 +74,8 @@ class Recipe(models.Model):
         Ingredient, through='IngredientRecipe')
     tags = models.ManyToManyField(Tag)
     cooking_time = models.PositiveIntegerField()
+    is_favorited = models.BooleanField(null=True, blank=True)
+    is_in_shopping_cart = models.BooleanField(null=True, blank=True)
 
     class Meta:
         verbose_name = "рецепт"
