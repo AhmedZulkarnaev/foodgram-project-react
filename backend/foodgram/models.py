@@ -71,11 +71,13 @@ class Recipe(models.Model):
     image = models.ImageField(upload_to='recipe_images/')
     text = models.TextField()
     ingredients = models.ManyToManyField(
-        Ingredient, through='IngredientRecipe')
+        Ingredient,
+        through='IngredientRecipe',
+    )
     tags = models.ManyToManyField(Tag)
     cooking_time = models.PositiveIntegerField()
-    is_favorited = models.BooleanField(null=True, blank=True)
-    is_in_shopping_cart = models.BooleanField(null=True, blank=True)
+    is_favorited = models.BooleanField(default=False)
+    is_in_shopping_cart = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "рецепт"
@@ -88,7 +90,7 @@ class Recipe(models.Model):
 class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    quantity = models.FloatField()
+    amount = models.IntegerField()
 
     def __str__(self):
-        return self.ingredient
+        return f"{self.ingredient}"

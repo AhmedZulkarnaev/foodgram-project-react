@@ -14,6 +14,9 @@ class UserCreateViewSet(viewsets.ModelViewSet):
     def get_object(self):
         return self.request.user
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()

@@ -2,6 +2,7 @@ import base64
 from djoser.serializers import UserCreateSerializer as DjoserCreateSerializer
 from django.core.files.base import ContentFile
 from rest_framework import serializers
+import uuid
 from foodgram.models import Recipe, Ingredient, Tag, IngredientRecipe, User
 
 
@@ -24,37 +25,55 @@ class UserCreateSerializer(DjoserCreateSerializer):
 
 
 class Base64ImageField(serializers.ImageField):
+
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
-            decoded_img = base64.b64decode(imgstr)
-            data = ContentFile(
-                decoded_img, name='temp.' + format.split('/')[-1])
+            ext = format.split('/')[-1]
+            file_name = str(uuid.uuid4()) + '.' + ext
+            data = ContentFile(base64.b64decode(imgstr), name=file_name)
         return super().to_internal_value(data)
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = ['id', 'name', 'color', 'slug']
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = '__all__'
+        fields = ['id', 'name', 'measurement_unit']
+
+
+class RecipeIngredientSerializer(serializers.ModelSerializer):
+    ingredient = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField()
+
+    class Meta:
+        model = IngredientRecipe
+        fields = ['ingredient', 'amount']
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    ingredients = serializers.PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all(), many=True)
+    ingredients = RecipeIngredientSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True)
-    image = Base64ImageField(max_length=None, use_url=True)
+    image = Base64ImageField(max_length=None)
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = [
+            'id',
+            'author',
+            'name',
+            'image',
+            'text',
+            'ingredients',
+            'tags',
+            'cooking_time'
+        ]
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
