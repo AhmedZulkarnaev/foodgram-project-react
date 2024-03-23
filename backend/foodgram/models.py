@@ -93,4 +93,4 @@ class IngredientRecipe(models.Model):
     amount = models.IntegerField()
 
     def __str__(self):
-        return f"{self.ingredient}"
+        return f"{self.ingredient} - {self.amount}"
