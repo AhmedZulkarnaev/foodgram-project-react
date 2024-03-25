@@ -38,6 +38,15 @@ class User(AbstractUser):
         return self.username
 
 
+class AuthorSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        User, related_name='подписки', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'author')
+
+
 class Tag(models.Model):
     name = models.CharField(
         "Название", max_length=MAX_LENGTH_NAME, unique=True

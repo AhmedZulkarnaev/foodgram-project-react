@@ -2,10 +2,14 @@ import base64
 from djoser.serializers import UserCreateSerializer as DjoserCreateSerializer
 from django.core.files.base import ContentFile
 from rest_framework import serializers
-from foodgram.models import Recipe, Ingredient, Tag, IngredientRecipe, User
+from foodgram.models import (
+    Recipe, Ingredient, Tag, IngredientRecipe, User, AuthorSubscription
+)
 
 
 class UserSerializer(DjoserCreateSerializer):
+    """Serializer for CustomUser."""
+
     class Meta(DjoserCreateSerializer.Meta):
         fields = (
             'id', 'email', 'username', 'password', 'first_name', 'last_name'
@@ -23,7 +27,18 @@ class UserSerializer(DjoserCreateSerializer):
         return user
 
 
+class SubscriptionSerializer(DjoserCreateSerializer):
+    """Serializer for subscription."""
+
+    class Meta:
+        model = AuthorSubscription
+        fields = ['id', 'user', 'author']
+
+
+
 class Base64ImageField(serializers.ImageField):
+    """Decode Image."""
+
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
@@ -33,7 +48,7 @@ class Base64ImageField(serializers.ImageField):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор тэгов"""
+    """Serializer for tag."""
 
     class Meta:
         model = Tag
@@ -41,7 +56,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """Сериализатор ингредиентов"""
+    """Serializer for ingredient."""
 
     class Meta:
         model = Ingredient
@@ -49,7 +64,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientsRecipeSerializer(serializers.ModelSerializer):
-    """Сериализатор для описания ингредиентов в рецепте."""
+    """Serializer for description ingredient a recipe."""
 
     name = serializers.CharField(source="ingredient.name", read_only=True)
     id = serializers.PrimaryKeyRelatedField(
@@ -64,7 +79,7 @@ class IngredientsRecipeSerializer(serializers.ModelSerializer):
 
 
 class NewIngredientAddSerializer(serializers.ModelSerializer):
-    """Сериализатор для добавления ингредиента"""
+    """Serializer for add a ingredient."""
 
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source="ingredient"
@@ -145,8 +160,8 @@ class RecipeListSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = (
             "id",
-            "tags",
             "author",
+            "tags",
             "ingredients",
             "name",
             "image",
