@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
+from .validators import validate_username
 from .constants import (
     MAX_LENGTH_USERNAME, MAX_LENGTH_NAME, MAX_LENGTH_EMAIL, MAX_LENGTH_SLUG
 )
@@ -14,6 +15,7 @@ class User(AbstractUser):
         unique=True,
         validators=[
             UnicodeUsernameValidator(),
+            validate_username
         ]
     )
     first_name = models.CharField(
@@ -36,15 +38,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
-
-class AuthorSubscription(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    author = models.ForeignKey(
-        User, related_name='подписки', on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('user', 'author')
 
 
 class Tag(models.Model):
@@ -75,7 +68,9 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='recipes'
+    )
     name = models.CharField(max_length=MAX_LENGTH_NAME)
     image = models.ImageField(upload_to='recipe_images/')
     text = models.TextField()

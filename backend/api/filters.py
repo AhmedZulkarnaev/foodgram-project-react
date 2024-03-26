@@ -17,3 +17,10 @@ class RecipeFilter(filters.FilterSet):
     class Meta:
         model = Recipe
         fields = ['tags']
+
+    def filter_queryset(self, queryset):
+        if len(self.request.GET.getlist('tags')) == Tag.objects.count():
+            return queryset
+        return queryset.filter(
+            tags__slug__in=self.request.GET.getlist('tags')
+        ).distinct()

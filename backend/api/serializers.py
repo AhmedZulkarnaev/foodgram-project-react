@@ -3,7 +3,7 @@ from djoser.serializers import UserCreateSerializer as DjoserCreateSerializer
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from foodgram.models import (
-    Recipe, Ingredient, Tag, IngredientRecipe, User, AuthorSubscription
+    Recipe, Ingredient, Tag, IngredientRecipe, User
 )
 
 
@@ -25,15 +25,6 @@ class UserSerializer(DjoserCreateSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
-
-
-class SubscriptionSerializer(DjoserCreateSerializer):
-    """Serializer for subscription."""
-
-    class Meta:
-        model = AuthorSubscription
-        fields = ['id', 'user', 'author']
-
 
 
 class Base64ImageField(serializers.ImageField):
