@@ -1,5 +1,4 @@
 import base64
-from djoser.serializers import UserCreateSerializer as DjoserCreateSerializer
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from foodgram.models import (
@@ -7,23 +6,25 @@ from foodgram.models import (
 )
 
 
-class UserSerializer(DjoserCreateSerializer):
+class UserSerializer(serializers.ModelSerializer):
     """Serializer for CustomUser."""
+    is_subscribed = serializers.BooleanField(default=False)
 
-    class Meta(DjoserCreateSerializer.Meta):
+    class Meta:
+        model = User
         fields = (
-            'id', 'email', 'username', 'password', 'first_name', 'last_name'
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+            'is_subscribed'
         )
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
-        )
-        user.set_password(validated_data['password'])
-        user.save()
+        user = User.objects.create_user(**validated_data)
         return user
 
 

@@ -156,11 +156,8 @@ REST_FRAMEWORK = {
     ),
 }
 
-DJOSER = {
-    "LOGIN_FIELD": "email",
-    'SERIALIZERS': {
-         'user_create': 'api.serializers.UserCreateSerializer',
-    }
-}
-
 AUTH_USER_MODEL = 'foodgram.User'
+
+DJOSER = {
+    "LOGIN_FIELD": "email"
+}

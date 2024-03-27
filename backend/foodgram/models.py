@@ -80,8 +80,6 @@ class Recipe(models.Model):
     )
     tags = models.ManyToManyField(Tag)
     cooking_time = models.PositiveIntegerField()
-    is_favorited = models.BooleanField(default=False)
-    is_in_shopping_cart = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "рецепт"
@@ -95,6 +93,10 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     amount = models.IntegerField()
+
+    class Meta:
+        verbose_name = "ингредиент для рецепта"
+        verbose_name_plural = "Ингредиенты для рецепта"
 
     def __str__(self):
         return f"{self.ingredient} - {self.amount}"

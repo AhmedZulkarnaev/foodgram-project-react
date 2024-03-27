@@ -4,7 +4,7 @@ from .serializers import (
     RecipeCreateSerializer,
     TagSerializer,
     IngredientSerializer,
-    UserSerializer
+    UserSerializer,
 )
 from .filters import RecipeFilter
 from foodgram.models import Recipe, Tag, Ingredient, User
@@ -15,6 +15,8 @@ from rest_framework.pagination import LimitOffsetPagination
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = LimitOffsetPagination
+    page_size = 6
 
     def get_object(self):
         return self.request.user
