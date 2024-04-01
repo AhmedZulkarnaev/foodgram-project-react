@@ -8,7 +8,6 @@ from foodgram.models import (
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for CustomUser."""
-    is_subscribed = serializers.BooleanField(default=False)
 
     class Meta:
         model = User
@@ -19,7 +18,6 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'password',
-            'is_subscribed'
         )
         extra_kwargs = {'password': {'write_only': True}}
 
