@@ -28,6 +28,25 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(
+        methods=['POST'],
+        detail=False,
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='set_password'
+    )
+    def set_password(self, request):
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        if not user.check_password(current_password):
+            return Response(
+                {"error": "Incorrect current password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.set_password(new_password)
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
@@ -36,6 +55,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
     pagination_class = LimitOffsetPagination
+
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        author_id = self.request.query_params.get("author")
+        if author_id is not None:
+            queryset = queryset.filter(author_id=author_id)
+        return queryset
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,10 +77,3 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = IngredientFilter
     pagination_class = None
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        name_starts_with = self.request.query_params.get('name', None)
-        if name_starts_with:
-            queryset = queryset.filter(name__startswith=name_starts_with)
-        return queryset
