@@ -3,13 +3,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .serializers import (
+    FavoriteSerializer,
     RecipeCreateSerializer,
     TagSerializer,
     IngredientSerializer,
     UserSerializer,
 )
 from .filters import RecipeFilter, IngredientFilter
-from foodgram.models import Recipe, Tag, Ingredient, User
+from foodgram.models import Recipe, Tag, Ingredient, User, Favorite
 from rest_framework.pagination import LimitOffsetPagination
 
 
@@ -62,6 +63,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if author_id is not None:
             queryset = queryset.filter(author_id=author_id)
         return queryset
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="favorite",
+        url_name="favorite",
+    )
+    def favorite(self, request, pk=None):
+        user = request.user
+        recipe = self.get_object()
+        favorite = Favorite.objects.create(user=user, recipe=recipe)
+        serializer = FavoriteSerializer(favorite)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):

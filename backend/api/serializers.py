@@ -2,7 +2,7 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from foodgram.models import (
-    Recipe, Ingredient, Tag, IngredientRecipe, User
+    Favorite, Recipe, Ingredient, Tag, IngredientRecipe, User
 )
 
 
@@ -91,6 +91,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField()
+    is_favorited = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -103,6 +104,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "image",
             "text",
             "cooking_time",
+            "is_favorited"
         )
 
     def get_ingredients(self, recipe, ingredients):
@@ -132,6 +134,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         self.get_ingredients(instance, ingredients)
         return super().update(instance, validated_data)
 
+    # def get_favorite()
+
     def to_representation(self, instance):
         context = {"request": self.context.get("request")}
         return RecipeListSerializer(instance, context=context).data
@@ -156,5 +160,22 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "name",
             "image",
             "text",
-            "cooking_time",
+            "cooking_time"
         )
+
+
+class ShortInfoRecipeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+    def to_representation(self, instance):
+        context = {"request": self.context.get("request")}
+        return ShortInfoRecipeSerializer(instance.recipe, context=context).data
