@@ -91,7 +91,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True
     )
     image = Base64ImageField()
-    is_favorited = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -104,7 +103,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "image",
             "text",
             "cooking_time",
-            "is_favorited"
         )
 
     def get_ingredients(self, recipe, ingredients):
@@ -134,8 +132,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         self.get_ingredients(instance, ingredients)
         return super().update(instance, validated_data)
 
-    # def get_favorite()
-
     def to_representation(self, instance):
         context = {"request": self.context.get("request")}
         return RecipeListSerializer(instance, context=context).data
@@ -149,6 +145,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
         source='ingredientrecipe_set', many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     image = Base64ImageField()
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -160,8 +157,14 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "name",
             "image",
             "text",
-            "cooking_time"
+            "cooking_time",
+            "is_favorited"
         )
+
+    def get_is_favorited(self, obj):
+        """Добавлен ли рецепт в избранное."""
+        user_id = self.context.get("request").user.id
+        return Favorite.objects.filter(user=user_id, recipe=obj.id).exists()
 
 
 class ShortInfoRecipeSerializer(serializers.ModelSerializer):
