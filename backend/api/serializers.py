@@ -1,25 +1,28 @@
 import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 from foodgram.models import (
-    Favorite, Recipe, Ingredient, Tag, IngredientRecipe, User
+    Favorite, Recipe, Ingredient, Tag, IngredientRecipe, User, Cart
 )
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for CustomUser."""
+    """
+    Сериализатор для пользовательской модели.
+    """
 
     class Meta:
         model = User
         fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
         )
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -27,34 +30,42 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class Base64ImageField(serializers.ImageField):
-    """Decode Image."""
+    """
+    Декодирование изображения из base64.
+    """
 
     def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+        if isinstance(data, str) and data.startswith("data:image"):
+            format, imgstr = data.split(";base64,")
+            ext = format.split("/")[-1]
+            data = ContentFile(base64.b64decode(imgstr), name="temp." + ext)
         return super().to_internal_value(data)
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Serializer for tag."""
+    """
+    Сериализатор для тегов.
+    """
 
     class Meta:
         model = Tag
-        fields = ['id', 'name', 'color', 'slug']
+        fields = ["id", "name", "color", "slug"]
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """Serializer for ingredient."""
+    """
+    Сериализатор для ингредиентов.
+    """
 
     class Meta:
         model = Ingredient
-        fields = ['id', 'name', 'measurement_unit']
+        fields = ["id", "name", "measurement_unit"]
 
 
 class IngredientsRecipeSerializer(serializers.ModelSerializer):
-    """Serializer for description ingredient a recipe."""
+    """
+    Сериализатор для описания ингредиентов в рецепте.
+    """
 
     name = serializers.CharField(source="ingredient.name", read_only=True)
     id = serializers.PrimaryKeyRelatedField(
@@ -69,7 +80,9 @@ class IngredientsRecipeSerializer(serializers.ModelSerializer):
 
 
 class NewIngredientAddSerializer(serializers.ModelSerializer):
-    """Serializer for add a ingredient."""
+    """
+    Сериализатор для добавления ингредиента.
+    """
 
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source="ingredient"
@@ -81,7 +94,9 @@ class NewIngredientAddSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating a recipe."""
+    """
+    Сериализатор для создания рецепта.
+    """
 
     author = UserSerializer(read_only=True)
     ingredients = NewIngredientAddSerializer(
@@ -116,9 +131,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        author = self.context['request'].user
-        tags_data = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
+        author = self.context["request"].user
+        tags_data = validated_data.pop("tags")
+        ingredients = validated_data.pop("ingredients")
         recipe = Recipe.objects.create(author=author, **validated_data)
         recipe.tags.set(tags_data)
         self.get_ingredients(recipe, ingredients)
@@ -138,14 +153,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
-    """Serializer for listing a recipe."""
+    """
+    Сериализатор для списка рецептов.
+    """
 
     author = UserSerializer(read_only=True)
     ingredients = IngredientsRecipeSerializer(
-        source='ingredientrecipe_set', many=True, read_only=True)
+        source="ingredientrecipe_set", many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     image = Base64ImageField()
-    is_favorited = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField(read_only=True)
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Recipe
@@ -158,26 +176,39 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "image",
             "text",
             "cooking_time",
-            "is_favorited"
+            "is_favorited",
+            "is_in_shopping_cart"
         )
 
     def get_is_favorited(self, obj):
-        """Добавлен ли рецепт в избранное."""
         user_id = self.context.get("request").user.id
         return Favorite.objects.filter(user=user_id, recipe=obj.id).exists()
 
 
 class ShortInfoRecipeSerializer(serializers.ModelSerializer):
+    """
+    Краткий сериализатор для рецепта.
+    """
     class Meta:
         model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
+        fields = ("id", "name", "image", "cooking_time")
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для избранных рецептов.
+    """
 
     class Meta:
         model = Favorite
-        fields = ('user', 'recipe')
+        fields = ("user", "recipe")
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('user', 'recipe'),
+                message='Вы уже добавляли это рецепт в избранное'
+            )
+        ]
 
     def to_representation(self, instance):
         context = {"request": self.context.get("request")}

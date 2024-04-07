@@ -9,8 +9,18 @@ from .constants import (
 
 
 class User(AbstractUser):
+    """
+    Пользовательская модель пользователя, расширяющая AbstractUser Django.
+
+    Атрибуты:
+        username (str): Уникальное имя пользователя.
+        first_name (str): Имя пользователя.
+        last_name (str): Фамилия пользователя.
+        email (str): Email адрес пользователя.
+    """
+
     username = models.CharField(
-        verbose_name='Логин',
+        verbose_name="Логин",
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
         validators=[
@@ -19,28 +29,37 @@ class User(AbstractUser):
         ]
     )
     first_name = models.CharField(
-        verbose_name='Имя',
+        verbose_name="Имя",
         max_length=MAX_LENGTH_NAME,
     )
     last_name = models.CharField(
-        verbose_name='Фамилия',
+        verbose_name="Фамилия",
         max_length=MAX_LENGTH_NAME,
     )
     email = models.EmailField(
-        verbose_name='Email пользователя',
+        verbose_name="Email пользователя",
         max_length=MAX_LENGTH_EMAIL,
         unique=True,
     )
 
     class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
 
     def __str__(self):
         return self.username
 
 
 class Tag(models.Model):
+    """
+    Модель представляющая тег для рецептов.
+
+    Атрибуты:
+        name (str): Название тега.
+        color (str): Код цвета тега.
+        slug (str): Slug для тега.
+    """
+
     name = models.CharField(
         "Название", max_length=MAX_LENGTH_NAME, unique=True
     )
@@ -56,6 +75,14 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
+    """
+    Модель представляющая ингредиент.
+
+    Атрибуты:
+        name (str): Название ингредиента.
+        measurement_unit (str): Единица измерения ингредиента.
+    """
+
     name = models.CharField(max_length=MAX_LENGTH_NAME)
     measurement_unit = models.CharField(max_length=MAX_LENGTH_NAME)
 
@@ -68,15 +95,28 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
+    """
+    Модель представляющая рецепт.
+
+    Атрибуты:
+        author (User): Автор рецепта.
+        name (str): Название рецепта.
+        image (ImageField): Изображение рецепта.
+        text (str): Описание рецепта.
+        ingredients (ManyToManyField): Ингредиенты рецепта.
+        tags (ManyToManyField): Теги рецепта.
+        cooking_time (int): Время приготовления рецепта в минутах.
+    """
+
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='recipes'
+        User, on_delete=models.CASCADE, related_name="recipes"
     )
     name = models.CharField(max_length=MAX_LENGTH_NAME)
-    image = models.ImageField(upload_to='recipe_images/')
+    image = models.ImageField(upload_to="recipe_images/")
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientRecipe',
+        through="IngredientRecipe",
     )
     tags = models.ManyToManyField(Tag)
     cooking_time = models.PositiveIntegerField()
@@ -90,6 +130,15 @@ class Recipe(models.Model):
 
 
 class IngredientRecipe(models.Model):
+    """
+    Модель связи ингредиента и рецепта.
+
+    Атрибуты:
+        ingredient (Ingredient): Связанный ингредиент.
+        recipe (Recipe): Связанный рецепт.
+        amount (int): Количество ингредиента в рецепте.
+    """
+
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     amount = models.IntegerField()
@@ -103,12 +152,56 @@ class IngredientRecipe(models.Model):
 
 
 class Favorite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    """
+    Модель для избранных рецептов пользователей.
+
+    Атрибуты:
+        user (User): Пользователь, добавивший в избранное.
+        recipe (Recipe): Рецепт, добавленный в избранное.
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="favorites_user"
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name="favorites_recipe"
+    )
 
     class Meta:
-        verbose_name = 'Избранный рецепт'
-        verbose_name_plural = 'Избранные рецепты'
+        verbose_name = "Избранное"
+        verbose_name_plural = "Избранные"
 
     def __str__(self):
-        return f'Избранные рецепты {self.user}'
+        return f"{self.recipe} в избранном у пользователя {self.user}"
+
+
+class Cart(models.Model):
+    """
+    Модель для корзины покупок пользователей.
+
+    Атрибуты:
+        user (User): Пользователь, добавивший в корзину.
+        recipe (Recipe): Рецепт, добавленный в корзину.
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="cart_user"
+    )
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, related_name="cart_recipe"
+    )
+
+    class Meta:
+        verbose_name = "Корзина"
+        verbose_name_plural = "Корзина"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "recipe"],
+                name="unique_shopping_list_recipe"
+            )]
+
+    def __str__(self):
+        return (
+            f"Рецепт {self.recipe} в списке покупок у пользователя {self.user}"
+        )
