@@ -185,6 +185,22 @@ class RecipeListSerializer(serializers.ModelSerializer):
         return Favorite.objects.filter(user=user_id, recipe=obj.id).exists()
 
 
+class CartSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для списка покупок.
+    """
+    class Meta:
+        model = Cart
+        fields = ("user", "recipe")
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Cart.objects.all(),
+                fields=('user', 'recipe'),
+                message='Вы уже добавили этот рецепт в список покупок'
+            )
+        ]
+
+
 class ShortInfoRecipeSerializer(serializers.ModelSerializer):
     """
     Краткий сериализатор для рецепта.
@@ -206,7 +222,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
                 fields=('user', 'recipe'),
-                message='Вы уже добавляли это рецепт в избранное'
+                message='Вы уже добавили этот рецепт в избранное'
             )
         ]
 
