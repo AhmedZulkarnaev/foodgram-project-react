@@ -184,6 +184,10 @@ class RecipeListSerializer(serializers.ModelSerializer):
         user_id = self.context.get("request").user.id
         return Favorite.objects.filter(user=user_id, recipe=obj.id).exists()
 
+    def get_is_in_shopping_cart(self, obj):
+        user_id = self.context.get("request").user.id
+        return Cart.objects.filter(user=user_id, recipe=obj.id).exists()
+
 
 class CartSerializer(serializers.ModelSerializer):
     """
@@ -199,6 +203,10 @@ class CartSerializer(serializers.ModelSerializer):
                 message='Вы уже добавили этот рецепт в список покупок'
             )
         ]
+
+    def to_representation(self, instance):
+        context = {"request": self.context.get("request")}
+        return ShortInfoRecipeSerializer(instance.recipe, context=context).data
 
 
 class ShortInfoRecipeSerializer(serializers.ModelSerializer):

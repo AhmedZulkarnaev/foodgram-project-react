@@ -11,6 +11,9 @@ class RecipeFilter(django_filters.FilterSet):
     is_favorited = django_filters.NumberFilter(
         method='get_favorite_recipes'
     )
+    is_in_shopping_cart = django_filters.NumberFilter(
+        method='get_in_shopping_cart_recipes'
+    )
     tags = django_filters.ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
         field_name='tags__slug',
@@ -22,7 +25,7 @@ class RecipeFilter(django_filters.FilterSet):
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author', 'is_favorited')
+        fields = ('tags', 'author', 'is_favorited', 'is_in_shopping_cart')
 
     def get_favorite_recipes(self, queryset, name, value):
         """
@@ -32,6 +35,17 @@ class RecipeFilter(django_filters.FilterSet):
         if value and self.request.user.is_authenticated:
             return queryset.filter(
                 favorites_recipe__user=self.request.user
+            )
+        return queryset
+
+    def get_in_shopping_cart_recipes(self, queryset, name, value):
+        """
+        Метод для фильтрации рецептов по корзине.
+        """
+
+        if value and self.request.user.is_authenticated:
+            return queryset.filter(
+                cart_recipe__user=self.request.user
             )
         return queryset
 

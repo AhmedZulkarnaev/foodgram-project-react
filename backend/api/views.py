@@ -4,7 +4,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .serializers import (
-    FavoriteSerializer,
     RecipeCreateSerializer,
     TagSerializer,
     IngredientSerializer,
@@ -12,7 +11,7 @@ from .serializers import (
     ShortInfoRecipeSerializer
 )
 from .filters import RecipeFilter, IngredientFilter
-from foodgram.models import Recipe, Tag, Ingredient, User, Favorite
+from foodgram.models import Recipe, Tag, Ingredient, User, Favorite, Cart
 from rest_framework.pagination import LimitOffsetPagination
 
 
@@ -72,6 +71,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
     pagination_class = LimitOffsetPagination
 
+    def add_method(self, model, user, name, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        obj = model.objects.filter(user=user, recipe=recipe)
+        if obj.exists():
+            return Response(
+                {"errors": f"Нельзя повторно добавить рецепт в {name}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        model.objects.create(user=user, recipe=recipe)
+        serializer = ShortInfoRecipeSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete_method(self, model, user, name, pk):
+        recipe = get_object_or_404(Recipe, pk=pk)
+        obj = model.objects.filter(user=user, recipe=recipe)
+        if obj.exists():
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"errors": f"Нельзя повторно удалить рецепт из {name}"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     @action(
         detail=True,
         methods=["POST", "DELETE"],
@@ -80,29 +102,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def get_favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, pk=pk)
-        user = request.user.id
+        user = request.user
+        name = "избранного"
         if request.method == "POST":
-            serializer = FavoriteSerializer(
-                data={"user": user, "recipe": recipe.id}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            favorite_serializer = ShortInfoRecipeSerializer(recipe)
-            return Response(
-                favorite_serializer.data, status=status.HTTP_201_CREATED
-            )
-        elif request.method == 'DELETE':
-            favorite = Favorite.objects.filter(
-                user=user, recipe=recipe
-            ).first()
-            if favorite:
-                favorite.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(
-                {"error": "This recipe is not in favorites."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return self.add_method(Favorite, user, name, pk)
+        return self.delete_method(Favorite, user, name, pk)
+
+    @action(
+        detail=True,
+        methods=["POST", "DELETE"],
+        url_path="shopping_cart",
+        url_name="shopping_cart",
+        permission_classes=(permissions.IsAuthenticated,)
+    )
+    def get_in_shopping_to_cart(self, request, pk):
+        user = request.user
+        name = "списка покупок"
+        if request.method == "POST":
+            return self.add_method(Cart, user, name, pk)
+        return self.delete_method(Cart, user, name, pk)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
