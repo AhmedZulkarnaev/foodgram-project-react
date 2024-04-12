@@ -1,7 +1,9 @@
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
+from django.db.models import Sum
 from rest_framework.decorators import action
 from .serializers import (
     RecipeCreateSerializer,
@@ -11,8 +13,10 @@ from .serializers import (
     ShortInfoRecipeSerializer
 )
 from .filters import RecipeFilter, IngredientFilter
-from foodgram.models import Recipe, Tag, Ingredient, User, Favorite, Cart
+from foodgram.models import (
+    Recipe, Tag, Ingredient, User, Favorite, Cart, IngredientRecipe)
 from rest_framework.pagination import LimitOffsetPagination
+from api.permissions import IsAdminAuthorOrReadOnly
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -65,7 +69,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Recipe.objects.all()
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminAuthorOrReadOnly,]
     serializer_class = RecipeCreateSerializer
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
@@ -99,7 +103,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         methods=["POST", "DELETE"],
         url_path="favorite",
         url_name="favorite",
-        permission_classes=(permissions.IsAuthenticated,)
     )
     def get_favorite(self, request, pk):
         user = request.user
@@ -113,7 +116,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         methods=["POST", "DELETE"],
         url_path="shopping_cart",
         url_name="shopping_cart",
-        permission_classes=(permissions.IsAuthenticated,)
+        permission_classes=(permissions.IsAuthenticated,),
     )
     def get_in_shopping_to_cart(self, request, pk):
         user = request.user
@@ -121,6 +124,37 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == "POST":
             return self.add_method(Cart, user, name, pk)
         return self.delete_method(Cart, user, name, pk)
+
+    @action(
+        detail=False,
+        methods=["GET"],
+        url_path="download_shopping_cart",
+        url_name="download_shopping_cart",
+    )
+    def download_recipe_list(self, requset):
+        recipe_in_cart = Cart.objects.filter(user=requset.user)
+        recipe = [recipe_.recipe.id for recipe_ in recipe_in_cart]
+        download_recipes = (
+            IngredientRecipe.objects.filter(recipe__in=recipe)
+            .values("ingredient")
+            .annotate(amount=Sum("amount"))
+        )
+        download_list = [
+            "Список покупок: "
+        ]
+        for recipe_ in download_recipes:
+            ingredient = Ingredient.objects.get(pk=recipe_["ingredient"])
+            amount = recipe_["amount"]
+            download_list.append(
+                f"{ingredient.name}: {amount}, "
+                f"{ingredient.measurement_unit}"
+            )
+        file_content = "\n".join(download_list)
+        response = HttpResponse(file_content, content_type="text/plain")
+        response["Content-Disposition"] = (
+            "attachment; filename=recipe_list.txt"
+        )
+        return response
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
