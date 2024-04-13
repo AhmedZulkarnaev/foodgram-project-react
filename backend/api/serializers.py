@@ -3,11 +3,13 @@ from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 from foodgram.models import (
-    Favorite, Recipe, Ingredient, Tag, IngredientRecipe, User, Cart
+    Favorite,
+    Recipe, Ingredient, Tag, IngredientRecipe, User, Cart, Subscription
 )
+from foodgram.constants import RECIPES_LIMIT
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(serializers.ModelSerializer):
     """
     Сериализатор для пользовательской модели.
     """
@@ -27,6 +29,75 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для пользовательской модели.
+    """
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed"
+        )
+
+    def get_is_subscribed(self, obj):
+        user_id = self.context.get("request").user.id
+        return Subscription.objects.filter(
+            author=obj.id, user=user_id
+        ).exists()
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели подписок.
+    """
+
+    class Meta:
+        model = Subscription
+        fields = "__all__"
+
+    def validate(self, data):
+        if data["user"] == data["author"]:
+            raise serializers.ValidationError(
+                "Нельзя подписатся на самого себя."
+            )
+        return data
+
+
+class SubscriptionListSerializer(serializers.ModelSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "recipes",
+            "recipes_count",
+            "is_subscribed",
+        )
+
+    def get_recipes(self, object):
+        author_recipes = object.recipes.all()[:RECIPES_LIMIT]
+        return ShortInfoRecipeSerializer(
+            author_recipes, many=True
+        ).data
+
+    def get_recipes_count(self, object):
+        return object.recipes.count()
 
 
 class Base64ImageField(serializers.ImageField):
@@ -180,13 +251,15 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "is_in_shopping_cart"
         )
 
-    def get_is_favorited(self, obj):
+    def check_validate(self, model, object):
         user_id = self.context.get("request").user.id
-        return Favorite.objects.filter(user=user_id, recipe=obj.id).exists()
+        return model.objects.filter(user=user_id, recipe=object.id).exists()
+
+    def get_is_favorited(self, obj):
+        return self.check_validate(Favorite, obj)
 
     def get_is_in_shopping_cart(self, obj):
-        user_id = self.context.get("request").user.id
-        return Cart.objects.filter(user=user_id, recipe=obj.id).exists()
+        return self.check_validate(Cart, obj)
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -199,8 +272,8 @@ class CartSerializer(serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=Cart.objects.all(),
-                fields=('user', 'recipe'),
-                message='Вы уже добавили этот рецепт в список покупок'
+                fields=("user", "recipe"),
+                message="Вы уже добавили этот рецепт в список покупок"
             )
         ]
 
@@ -229,8 +302,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
-                fields=('user', 'recipe'),
-                message='Вы уже добавили этот рецепт в избранное'
+                fields=("user", "recipe"),
+                message="Вы уже добавили этот рецепт в избранное"
             )
         ]
 

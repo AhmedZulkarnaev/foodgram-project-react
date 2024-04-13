@@ -19,8 +19,8 @@ class RecipeFilter(django_filters.FilterSet):
         field_name='tags__slug',
         to_field_name='slug'
     )
-    author = django_filters.AllValuesMultipleFilter(
-        field_name='author__username'
+    author = django_filters.NumberFilter(
+        field_name='author__id', lookup_expr='exact'
     )
 
     class Meta:
@@ -50,19 +50,13 @@ class RecipeFilter(django_filters.FilterSet):
         return queryset
 
 
-class IngredientFilter(django_filters.FilterSet):
+class IngredientSearchFilter(django_filters.FilterSet):
     """
-    Фильтр для ингредиентов.
-    Позволяет фильтровать ингредиенты по началу и частичному совпадению имени.
+    Фильтр поиска по названию ингредиента.
     """
 
-    starts_with_name = django_filters.CharFilter(
-        field_name='name', lookup_expr='istartswith'
-        )
-    contains_name = django_filters.CharFilter(
-        field_name='name', lookup_expr='icontains'
-        )
+    name = django_filters.CharFilter(lookup_expr='istartswith')
 
     class Meta:
         model = Ingredient
-        fields = ['starts_with_name', 'contains_name']
+        fields = ('name', )

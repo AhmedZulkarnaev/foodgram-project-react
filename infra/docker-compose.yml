@@ -2,7 +2,8 @@ version: '3.3'
 
 volumes:
   pg_data_foodgram:
-  static_foodgram:
+  static:
+  media:
 
 services:
   db:
@@ -10,12 +11,15 @@ services:
     env_file: .env
     volumes:
       - pg_data_foodgram:/var/lib/postgresql/data
+      
   
   backend:
     build: ../backend
     env_file: .env
     volumes:
-      - static_foodgram:/backend_static
+      - static:/app/static/
+      - media:/app/media/
+
     depends_on:
       - db
 
@@ -25,7 +29,7 @@ services:
       dockerfile: Dockerfile
     command: cp -r /app/build/. /frontend_static/
     volumes:
-      - static_foodgram:/frontend_static
+      - static:/frontend_static
 
   nginx:
     image: nginx:1.19.3
@@ -34,7 +38,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../docs/:/usr/share/nginx/html/api/docs/
-      - static_foodgram:/staticfiles/
+      - static:/staticfiles/
+      - media:/var/html/media/
     depends_on:
       - backend
       - frontend
