@@ -11,7 +11,6 @@ from .serializers import (
     IngredientSerializer,
     UserSerializer,
     ShortInfoRecipeSerializer,
-    SubscriptionSerializer,
     UserCreateSerializer,
     SubscriptionListSerializer
 )
@@ -69,53 +68,64 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=True,
-        methods=['post', 'delete'],
-        url_path='subscribe',
-        url_name='subscribe',
-        permission_classes=(permissions.IsAuthenticated,)
+        detail=False,
+        methods=("GET",),
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="subscriptions",
+        url_name="subscriptions"
     )
-    def get_subscribe(self, request, id):
-        """Позволяет текущему пользователю подписываться/отписываться от
-        от автора контента, чей профиль он просматривает."""
-        author = get_object_or_404(User, id=id)
-        if request.method == 'POST':
-            serializer = SubscriptionSerializer(
-                data={'subscriber': request.user.id, 'author': author.id}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            author_serializer = SubscriptionListSerializer(
-                author, context={'request': request}
-            )
-            return Response(
-                author_serializer.data, status=status.HTTP_201_CREATED
-            )
-        subscription = get_object_or_404(
-            Subscription, subscriber=request.user, author=author
+    def subscriptions(self, request):
+        """Список авторов, на которых подписан пользователь."""
+        user = self.request.user
+        subscribe = user.follower.all()
+        pages = self.paginate_queryset(subscribe)
+        serializer = SubscriptionListSerializer(
+            pages, many=True, context={"request": request}
         )
-        subscription.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return self.get_paginated_response(serializer.data)
 
     @action(
-        detail=False,
-        methods=['get'],
-        url_path='subscriptions',
-        url_name='subscriptions',
-        permission_classes=(permissions.IsAuthenticated,)
+        detail=True,
+        methods=("POST", "DELETE"),
+        permission_classes=[permissions.IsAuthenticated],
+        url_path="subscribe",
+        url_name="subscribe"
     )
-    def get_subscriptions(self, request):
-        """Возвращает авторов контента, на которых подписан
-        текущий пользователь.."""
-        authors = User.objects.filter(author__subscriber=request.user)
-        paginator = PageLimitPagination
-        result_pages = paginator.paginate_queryset(
-            queryset=authors, request=request
-        )
-        serializer = SubscriptionListSerializer(
-            result_pages, context={'request': request}, many=True
-        )
-        return paginator.get_paginated_response(serializer.data)
+    def subscribe(self, request, pk):
+        """Подписка на автора."""
+        user = self.request.user
+        author = get_object_or_404(User, pk=pk)
+        if author == user:
+            return Response(
+                    {"errors": "Подписка уже оформлена!"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        if self.request.method == "POST":
+            if Subscription.objects.filter(user=user, author=author).exists():
+                return Response(
+                    {"errors": "Подписка уже оформлена!"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            queryset = Subscription.objects.create(author=author, user=user)
+            serializer = SubscriptionListSerializer(
+                queryset, context={"request": request}
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        if self.request.method == "DELETE":
+            if not Subscription.objects.filter(
+                user=user, author=author
+            ).exists():
+                return Response(
+                    {"errors": "Вы уже отписаны!"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            subscription = get_object_or_404(
+                Subscription, user=user, author=author
+            )
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

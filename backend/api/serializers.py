@@ -6,7 +6,6 @@ from foodgram.models import (
     Favorite,
     Recipe, Ingredient, Tag, IngredientRecipe, User, Cart, Subscription
 )
-from foodgram.constants import RECIPES_LIMIT
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -64,40 +63,47 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = "__all__"
 
-    def validate(self, data):
-        if data["user"] == data["author"]:
-            raise serializers.ValidationError(
-                "Нельзя подписатся на самого себя."
-            )
-        return data
-
 
 class SubscriptionListSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для модели подписок,
+    предназначенный для отображения информации о подписках.
+    """
+
+    id = serializers.ReadOnlyField(source="author.id")
+    email = serializers.ReadOnlyField(source="author.email")
+    username = serializers.ReadOnlyField(source="author.username")
+    first_name = serializers.ReadOnlyField(source="author.first_name")
+    last_name = serializers.ReadOnlyField(source="author.last_name")
     recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
+    recipes_count = serializers.ReadOnlyField(source="author.recipes.count")
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model = Subscription
         fields = (
             "id",
-            "email",
             "username",
             "first_name",
             "last_name",
+            "email",
+            "is_subscribed",
             "recipes",
             "recipes_count",
-            "is_subscribed",
         )
 
-    def get_recipes(self, object):
-        author_recipes = object.recipes.all()[:RECIPES_LIMIT]
-        return ShortInfoRecipeSerializer(
-            author_recipes, many=True
-        ).data
+    def get_is_subscribed(self, obj):
+        user_id = self.context.get("request").user.id
+        return Subscription.objects.filter(
+            author=obj.id, user=user_id
+        ).exists()
 
-    def get_recipes_count(self, object):
-        return object.recipes.count()
+    def get_recipes(self, obj):
+        author_recipes = obj.author.recipes.all()
+        return ShortInfoRecipeSerializer(author_recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj.id).count()
 
 
 class Base64ImageField(serializers.ImageField):
@@ -190,6 +196,38 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+
+    def validate(self, data):
+        if "tags" not in data or len(data["tags"]) < 1:
+            raise serializers.ValidationError("Должен быть хотя бы один тег")
+
+        if "ingredients" not in data or len(data["ingredients"]) < 1:
+            raise serializers.ValidationError(
+                "Должен быть хотя бы один ингредиент"
+            )
+
+        if data.get("cooking_time", 0) < 1:
+            raise serializers.ValidationError(
+                "Время готовки должно быть не менее 1"
+            )
+
+        tags = data.get("tags", [])
+        if len(set(tags)) != len(tags):
+            raise serializers.ValidationError("Теги не должны повторяться")
+
+        ingredients = data.get("ingredients", [])
+        ingredient_names = [item["ingredient"] for item in ingredients]
+        if len(set(ingredient_names)) != len(ingredient_names):
+            raise serializers.ValidationError(
+                "Ингредиенты не должны повторяться"
+            )
+
+        if any(item.get("amount", 0) < 1 for item in ingredients):
+            raise serializers.ValidationError(
+                "Количество ингредиента должно быть не менее 1"
+            )
+
+        return data
 
     def get_ingredients(self, recipe, ingredients):
         IngredientRecipe.objects.bulk_create(

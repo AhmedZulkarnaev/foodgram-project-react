@@ -208,7 +208,13 @@ class Cart(models.Model):
 
 
 class Subscription(models.Model):
-    """Модель подписки."""
+    """
+    Модель подписки.
+
+    Атрибуты:
+        user: Внешний ключ к модели User, представляющий подписчика.
+        author: Внешний ключ к модели User, представляющий автора.
+    """
 
     user = models.ForeignKey(
         User,
