@@ -91,6 +91,10 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
             "recipes",
             "recipes_count",
         )
+        ordering = ['-id']
+        extra_kwargs = {
+            'recipes_limit': {'write_only': True}
+        }
 
     def get_is_subscribed(self, obj):
         user_id = self.context.get("request").user.id
@@ -99,10 +103,23 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_recipes(self, obj):
-        author_recipes = obj.author.recipes.all()
-        return ShortInfoRecipeSerializer(author_recipes, many=True).data
+        recipes_limit = self.context.get('request').query_params.get(
+            'recipes_limit')
+        author_recipes = obj.author.recipes.all(
+
+        )[:int(recipes_limit)] if recipes_limit else obj.author.recipes.all()
+        if author_recipes:
+            serializer = ShortInfoRecipeSerializer(
+                author_recipes,
+                context={"request": self.context.get("request")},
+                many=True,
+            )
+            return serializer.data
+        else:
+            return []
 
     def get_recipes_count(self, obj):
+        """Количество рецептов автора."""
         return Recipe.objects.filter(author=obj.id).count()
 
 
@@ -196,6 +213,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
+        ordering = ['-id']
 
     def validate(self, data):
         if "tags" not in data or len(data["tags"]) < 1:
@@ -288,6 +306,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
             "is_favorited",
             "is_in_shopping_cart"
         )
+        ordering = ['-id']
 
     def check_validate(self, model, object):
         user_id = self.context.get("request").user.id

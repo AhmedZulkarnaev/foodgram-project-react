@@ -18,8 +18,9 @@ from .filters import RecipeFilter, IngredientSearchFilter
 from foodgram.models import (
     Recipe,
     Tag, Ingredient, User, Favorite, Cart, IngredientRecipe, Subscription)
-from .paginations import PageLimitPagination
-from api.permissions import IsAdminAuthorOrReadOnly
+from api.permissions import (
+    IsAdminAuthorOrReadOnly, AnonimOrAuthenticatedReadOnly
+)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -31,7 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
 
     queryset = User.objects.all()
-    pagination_class = PageLimitPagination
+    permission_classes = [AnonimOrAuthenticatedReadOnly]
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -126,6 +127,19 @@ class UserViewSet(viewsets.ModelViewSet):
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        recipes_limit = self.request.query_params.get('recipes_limit', None)
+
+        if recipes_limit is not None:
+            recipes_queryset = instance.recipes.all()[:recipes_limit]
+        else:
+            recipes_queryset = instance.recipes.all()
+
+        representation['recipes'] = ShortInfoRecipeSerializer(recipes_queryset,
+                                                              many=True).data
+        return representation
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

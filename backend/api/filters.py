@@ -9,23 +9,25 @@ class RecipeFilter(django_filters.FilterSet):
     """
 
     is_favorited = django_filters.NumberFilter(
-        method='get_favorite_recipes'
+        method="get_favorite_recipes"
     )
     is_in_shopping_cart = django_filters.NumberFilter(
-        method='get_in_shopping_cart_recipes'
+        method="get_in_shopping_cart_recipes"
     )
     tags = django_filters.ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
-        field_name='tags__slug',
-        to_field_name='slug'
+        field_name="tags__slug",
+        to_field_name="slug"
     )
     author = django_filters.NumberFilter(
-        field_name='author__id', lookup_expr='exact'
+        field_name="author__id", lookup_expr="exact"
     )
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author', 'is_favorited', 'is_in_shopping_cart')
+        fields = (
+            "tags",
+            "author", "is_favorited", "is_in_shopping_cart")
 
     def get_favorite_recipes(self, queryset, name, value):
         """
@@ -55,8 +57,8 @@ class IngredientSearchFilter(django_filters.FilterSet):
     Фильтр поиска по названию ингредиента.
     """
 
-    name = django_filters.CharFilter(lookup_expr='istartswith')
+    name = django_filters.CharFilter(lookup_expr="istartswith")
 
     class Meta:
         model = Ingredient
-        fields = ('name', )
+        fields = ("name", )
