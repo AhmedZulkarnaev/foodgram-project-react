@@ -128,19 +128,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        recipes_limit = self.request.query_params.get('recipes_limit', None)
-
-        if recipes_limit is not None:
-            recipes_queryset = instance.recipes.all()[:recipes_limit]
-        else:
-            recipes_queryset = instance.recipes.all()
-
-        representation['recipes'] = ShortInfoRecipeSerializer(recipes_queryset,
-                                                              many=True).data
-        return representation
-
 
 class RecipeViewSet(viewsets.ModelViewSet):
     """
