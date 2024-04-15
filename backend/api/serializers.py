@@ -115,8 +115,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
                 many=True,
             )
             return serializer.data
-        else:
-            return []
+        return []
 
     def get_recipes_count(self, obj):
         """Количество рецептов автора."""

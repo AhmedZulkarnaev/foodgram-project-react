@@ -144,8 +144,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def add_method(self, model, user, name, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
-        obj = model.objects.filter(user=user, recipe=recipe)
-        if obj.exists():
+        if model.objects.filter(user=user, recipe=recipe).exists():
             return Response(
                 {"errors": f"Нельзя повторно добавить рецепт в {name}"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -157,7 +156,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def delete_method(self, model, user, name, pk):
         recipe = get_object_or_404(Recipe, pk=pk)
         obj = model.objects.filter(user=user, recipe=recipe)
-        if obj.exists():
+        if model.objects.filter(user=user, recipe=recipe).exists():
             obj.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
@@ -173,7 +172,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_favorite(self, request, pk):
         user = request.user
-        name = "избранного"
+        name = "избранное"
         if request.method == "POST":
             return self.add_method(Favorite, user, name, pk)
         return self.delete_method(Favorite, user, name, pk)
@@ -187,7 +186,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def get_in_shopping_to_cart(self, request, pk):
         user = request.user
-        name = "списка покупок"
+        name = "список покупок"
         if request.method == "POST":
             return self.add_method(Cart, user, name, pk)
         return self.delete_method(Cart, user, name, pk)
