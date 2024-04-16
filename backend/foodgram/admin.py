@@ -5,7 +5,7 @@ from .models import (Favorite, Ingredient, IngredientRecipe, Recipe,
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', )
+    list_display = ('username', 'email')
     search_fields = ('username', 'email')
 
 
