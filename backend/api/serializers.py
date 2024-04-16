@@ -17,11 +17,11 @@ from foodgram.models import (
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для пользовательской модели.
-    """
+    """Сериализатор для пользовательской модели."""
 
     class Meta:
+        """Метакласс для определения свойств сериализатора."""
+
         model = User
         fields = (
             "id",
@@ -34,20 +34,19 @@ class UserCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
-        """
-        Создание пользователя
-        """
+        """Создание пользователя."""
         user = User.objects.create_user(**validated_data)
         return user
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для пользовательской модели.
-    """
+    """Сериализатор для пользовательской модели."""
+
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
+        """Метакласс для определения свойств сериализатора."""
+
         model = User
         fields = (
             "id",
@@ -59,16 +58,18 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, obj):
+        """Метод проверки подписки."""
         user_id = self.context.get("request").user.id
         return Subscription.objects.filter(
             author=obj.id, user=user_id).exists()
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели подписок.
-    """
+    """Сериализатор для модели подписок."""
+
     class Meta:
+        """Метакласс для определения свойств сериализатора."""
+
         model = Subscription
         fields = "__all__"
 
@@ -76,6 +77,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class SubscriptionListSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели подписок,
+
     предназначенный для отображения информации о подписках.
     """
 
@@ -89,6 +91,8 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
+        """Метакласс для определения свойств сериализатора."""
+
         model = Subscription
         fields = (
             "id",
@@ -104,11 +108,13 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
         extra_kwargs = {"recipes_limit": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
+        """Метод проверки подписки."""
         user_id = self.context.get("request").user.id
         return Subscription.objects.filter(
             author=obj.id, user=user_id).exists()
 
     def get_recipes(self, obj):
+        """Метод получения рецепта с параметрами."""
         recipes_limit = self.context.get("request").query_params.get(
             "recipes_limit"
         )
@@ -132,9 +138,7 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
 
 
 class Base64ImageField(serializers.ImageField):
-    """
-    Декодирование изображения из base64.
-    """
+    """Декодирование изображения из base64."""
 
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith("data:image"):
@@ -145,9 +149,7 @@ class Base64ImageField(serializers.ImageField):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для тегов.
-    """
+    """Сериализатор для тегов."""
 
     class Meta:
         model = Tag
@@ -155,9 +157,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для ингредиентов.
-    """
+    """Сериализатор для ингредиентов."""
 
     class Meta:
         model = Ingredient
@@ -165,9 +165,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientsRecipeSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для описания ингредиентов в рецепте.
-    """
+    """Сериализатор для описания ингредиентов в рецепте."""
 
     name = serializers.CharField(source="ingredient.name", read_only=True)
     id = serializers.PrimaryKeyRelatedField(
@@ -182,9 +180,7 @@ class IngredientsRecipeSerializer(serializers.ModelSerializer):
 
 
 class NewIngredientAddSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для добавления ингредиента.
-    """
+    """Сериализатор для добавления ингредиента."""
 
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(), source="ingredient"
@@ -196,9 +192,7 @@ class NewIngredientAddSerializer(serializers.ModelSerializer):
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для создания рецепта.
-    """
+    """Сериализатор для создания рецепта."""
 
     author = UserSerializer(read_only=True)
     ingredients = NewIngredientAddSerializer(
@@ -283,9 +277,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для списка рецептов.
-    """
+    """Сериализатор для списка рецептов."""
 
     author = UserSerializer(read_only=True)
     ingredients = IngredientsRecipeSerializer(
@@ -324,9 +316,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
 
 
 class CartSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для списка покупок.
-    """
+    """Сериализатор для списка покупок."""
 
     class Meta:
         model = Cart
@@ -345,9 +335,7 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class ShortInfoRecipeSerializer(serializers.ModelSerializer):
-    """
-    Краткий сериализатор для рецепта.
-    """
+    """Краткий сериализатор для рецепта."""
 
     class Meta:
         model = Recipe

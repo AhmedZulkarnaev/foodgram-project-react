@@ -35,6 +35,7 @@ from .serializers import (
 class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet для пользователей.
+
     Позволяет выполнять операции CRUD для пользователей.
     Так же предоставляет методы для получения информации о текущем пользователе
     и изменения пароля.
@@ -44,6 +45,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [AnonimOrAuthenticatedReadOnly]
 
     def get_serializer_class(self):
+        """Возвращает класс сериализатора в зависимости от HTTP-запроса."""
         if self.request.method == "GET":
             return UserSerializer
         return UserCreateSerializer
@@ -55,6 +57,7 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path="me",
     )
     def get_current_user_info(self, request):
+        """Возвращает информацию о текущем пользователе."""
         serializer = self.get_serializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -65,6 +68,7 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path="set_password",
     )
     def set_password(self, request):
+        """Устанавливает новый пароль текущему пользователю."""
         user = request.user
         current_password = request.data.get("current_password")
         new_password = request.data.get("new_password")
@@ -139,6 +143,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """
     ViewSet для рецептов.
+
     Позволяет выполнять операции CRUD для рецептов.
     Так же предоставляет методы для добавления/удаления рецепта в избранное.
     """
@@ -152,6 +157,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def add_method(self, model, user, name, pk):
+        """Метод добавления/создания объекта."""
         recipe = get_object_or_404(Recipe, pk=pk)
         if model.objects.filter(user=user, recipe=recipe).exists():
             return Response(
@@ -163,6 +169,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete_method(self, model, user, name, pk):
+        """Метод удаления объекта."""
         recipe = get_object_or_404(Recipe, pk=pk)
         obj = model.objects.filter(user=user, recipe=recipe)
         if model.objects.filter(user=user, recipe=recipe).exists():
@@ -180,6 +187,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_name="favorite",
     )
     def get_favorite(self, request, pk):
+        """Метод добавления/удаления объекта из избранное."""
         user = request.user
         name = "избранное"
         if request.method == "POST":
@@ -194,6 +202,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,),
     )
     def get_in_shopping_to_cart(self, request, pk):
+        """Метод добавления/удаления объекта из корзины."""
         user = request.user
         name = "список покупок"
         if request.method == "POST":
@@ -207,6 +216,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_name="download_shopping_cart",
     )
     def download_recipe_list(self, requset):
+        """Метод скачивания ингредиентов из списка покупок."""
         recipe_in_cart = Cart.objects.filter(user=requset.user)
         recipe = [recipe_.recipe.id for recipe_ in recipe_in_cart]
         download_recipes = (
@@ -232,6 +242,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet для тегов.
+
     Позволяет выполнять операцию чтения для тегов.
     """
 
@@ -244,6 +255,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet для ингредиентов.
+
     Позволяет выполнять операцию чтения для ингредиентов.
     Дополнительно предоставляет возможность фильтрации списка ингредиентов.
     """
