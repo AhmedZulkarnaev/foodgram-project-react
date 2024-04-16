@@ -2,8 +2,8 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from foodgram_backend.settings import CSV_FILES_DIR
 from foodgram.models import Ingredient
+from foodgram_backend.settings import CSV_FILES_DIR
 
 
 class Command(BaseCommand):

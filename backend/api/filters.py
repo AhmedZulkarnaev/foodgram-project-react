@@ -1,5 +1,6 @@
 import django_filters
-from foodgram.models import Recipe, Tag, Ingredient
+
+from foodgram.models import Ingredient, Recipe, Tag
 
 
 class RecipeFilter(django_filters.FilterSet):

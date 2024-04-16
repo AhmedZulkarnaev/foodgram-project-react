@@ -1,26 +1,21 @@
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.response import Response
-from django.db.models import Sum
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from .serializers import (
-    RecipeCreateSerializer,
-    TagSerializer,
-    IngredientSerializer,
-    UserSerializer,
-    ShortInfoRecipeSerializer,
-    UserCreateSerializer,
-    SubscriptionListSerializer
-)
-from .filters import RecipeFilter, IngredientSearchFilter
-from foodgram.models import (
-    Recipe,
-    Tag, Ingredient, User, Favorite, Cart, IngredientRecipe, Subscription)
-from api.permissions import (
-    IsAdminAuthorOrReadOnly, AnonimOrAuthenticatedReadOnly
-)
+from rest_framework.response import Response
+
+from api.permissions import (AnonimOrAuthenticatedReadOnly,
+                             IsAdminAuthorOrReadOnly)
+from foodgram.models import (Cart, Favorite, Ingredient, IngredientRecipe,
+                             Recipe, Subscription, Tag, User)
+
+from .filters import IngredientSearchFilter, RecipeFilter
+from .serializers import (IngredientSerializer, RecipeCreateSerializer,
+                          ShortInfoRecipeSerializer,
+                          SubscriptionListSerializer, TagSerializer,
+                          UserCreateSerializer, UserSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
