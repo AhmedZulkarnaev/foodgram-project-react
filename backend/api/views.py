@@ -6,16 +6,30 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from api.permissions import (AnonimOrAuthenticatedReadOnly,
-                             IsAdminAuthorOrReadOnly)
-from foodgram.models import (Cart, Favorite, Ingredient, IngredientRecipe,
-                             Recipe, Subscription, Tag, User)
+from api.permissions import (
+    AnonimOrAuthenticatedReadOnly, IsAdminAuthorOrReadOnly
+    )
+from foodgram.models import (
+    Cart,
+    Favorite,
+    Ingredient,
+    IngredientRecipe,
+    Recipe,
+    Subscription,
+    Tag,
+    User,
+)
 
 from .filters import IngredientSearchFilter, RecipeFilter
-from .serializers import (IngredientSerializer, RecipeCreateSerializer,
-                          ShortInfoRecipeSerializer,
-                          SubscriptionListSerializer, TagSerializer,
-                          UserCreateSerializer, UserSerializer)
+from .serializers import (
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    ShortInfoRecipeSerializer,
+    SubscriptionListSerializer,
+    TagSerializer,
+    UserCreateSerializer,
+    UserSerializer,
+)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -30,7 +44,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [AnonimOrAuthenticatedReadOnly]
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.request.method == "GET":
             return UserSerializer
         return UserCreateSerializer
 
@@ -38,7 +52,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=["GET"],
         detail=False,
         permission_classes=[permissions.IsAuthenticated],
-        url_path="me"
+        url_path="me",
     )
     def get_current_user_info(self, request):
         serializer = self.get_serializer(request.user)
@@ -48,7 +62,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=["POST"],
         detail=False,
         permission_classes=[permissions.IsAuthenticated],
-        url_path="set_password"
+        url_path="set_password",
     )
     def set_password(self, request):
         user = request.user
@@ -57,7 +71,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if not user.check_password(current_password):
             return Response(
                 {"error": "Incorrect current password"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         user.set_password(new_password)
         user.save()
@@ -68,7 +82,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=("GET",),
         permission_classes=[permissions.IsAuthenticated],
         url_path="subscriptions",
-        url_name="subscriptions"
+        url_name="subscriptions",
     )
     def subscriptions(self, request):
         """Список авторов, на которых подписан пользователь."""
@@ -85,7 +99,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=("POST", "DELETE"),
         permission_classes=[permissions.IsAuthenticated],
         url_path="subscribe",
-        url_name="subscribe"
+        url_name="subscribe",
     )
     def subscribe(self, request, pk):
         """Подписка на автора."""
@@ -93,9 +107,9 @@ class UserViewSet(viewsets.ModelViewSet):
         author = get_object_or_404(User, pk=pk)
         if author == user:
             return Response(
-                    {"errors": "Подписка уже оформлена!"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                {"errors": "Подписка уже оформлена!"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if self.request.method == "POST":
             if Subscription.objects.filter(user=user, author=author).exists():
                 return Response(
@@ -110,15 +124,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
         if self.request.method == "DELETE":
             if not Subscription.objects.filter(
-                user=user, author=author
-            ).exists():
+                    user=user, author=author).exists():
                 return Response(
                     {"errors": "Вы уже отписаны!"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             subscription = get_object_or_404(
-                Subscription, user=user, author=author
-            )
+                Subscription, user=user, author=author)
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -132,9 +144,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Recipe.objects.all()
-    permission_classes = [IsAdminAuthorOrReadOnly,]
+    permission_classes = [
+        IsAdminAuthorOrReadOnly,
+    ]
     serializer_class = RecipeCreateSerializer
-    filter_backends = (DjangoFilterBackend, )
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def add_method(self, model, user, name, pk):
@@ -200,21 +214,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             .values("ingredient")
             .annotate(amount=Sum("amount"))
         )
-        download_list = [
-            "Список покупок: "
-        ]
+        download_list = ["Список покупок: "]
         for recipe_ in download_recipes:
             ingredient = Ingredient.objects.get(pk=recipe_["ingredient"])
             amount = recipe_["amount"]
             download_list.append(
-                f"{ingredient.name}: {amount}, "
+                f"{ingredient.name}: {amount}, ",
                 f"{ingredient.measurement_unit}"
             )
         file_content = "\n".join(download_list)
         response = HttpResponse(file_content, content_type="text/plain")
-        response["Content-Disposition"] = (
-            "attachment; filename=recipe_list.txt"
-        )
+        response[
+            "Content-Disposition"] = "attachment; filename=recipe_list.txt"
         return response
 
 

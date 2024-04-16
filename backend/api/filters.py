@@ -9,9 +9,7 @@ class RecipeFilter(django_filters.FilterSet):
     Позволяет фильтровать рецепты по тегам, автору и наличию в избранном.
     """
 
-    is_favorited = django_filters.NumberFilter(
-        method="get_favorite_recipes"
-    )
+    is_favorited = django_filters.NumberFilter(method="get_favorite_recipes")
     is_in_shopping_cart = django_filters.NumberFilter(
         method="get_in_shopping_cart_recipes"
     )
@@ -21,35 +19,26 @@ class RecipeFilter(django_filters.FilterSet):
         to_field_name="slug"
     )
     author = django_filters.NumberFilter(
-        field_name="author__id", lookup_expr="exact"
-    )
+        field_name="author__id", lookup_expr="exact")
 
     class Meta:
         model = Recipe
-        fields = (
-            "tags",
-            "author", "is_favorited", "is_in_shopping_cart")
+        fields = ("tags", "author", "is_favorited", "is_in_shopping_cart")
 
     def get_favorite_recipes(self, queryset, name, value):
         """
         Метод для фильтрации рецептов по избранному.
         """
-
         if value and self.request.user.is_authenticated:
-            return queryset.filter(
-                favorites_recipe__user=self.request.user
-            )
+            return queryset.filter(favorites_recipe__user=self.request.user)
         return queryset
 
     def get_in_shopping_cart_recipes(self, queryset, name, value):
         """
         Метод для фильтрации рецептов по корзине.
         """
-
         if value and self.request.user.is_authenticated:
-            return queryset.filter(
-                cart_recipe__user=self.request.user
-            )
+            return queryset.filter(cart_recipe__user=self.request.user)
         return queryset
 
 
@@ -62,4 +51,4 @@ class IngredientSearchFilter(django_filters.FilterSet):
 
     class Meta:
         model = Ingredient
-        fields = ("name", )
+        fields = ("name",)
