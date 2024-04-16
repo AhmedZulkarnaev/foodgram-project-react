@@ -1,19 +1,10 @@
 import base64
 
 from django.core.files.base import ContentFile
+from foodgram.models import (Cart, Favorite, Ingredient, IngredientRecipe,
+                             Recipe, Subscription, Tag, User)
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-
-from foodgram.models import (
-    Cart,
-    Favorite,
-    Ingredient,
-    IngredientRecipe,
-    Recipe,
-    Subscription,
-    Tag,
-    User,
-)
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
