@@ -148,10 +148,6 @@ class Recipe(models.Model):
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(1)]
     )
-    pub_date = models.DateTimeField(
-        verbose_name="Дата публикации рецепта",
-        auto_now_add=True,
-    )
 
     class Meta:
         verbose_name = "рецепт"
