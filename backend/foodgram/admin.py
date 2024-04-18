@@ -10,9 +10,12 @@ class UserAdmin(admin.ModelAdmin):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author_name')
+    list_display = ('name', 'author_name', 'quantity_favorite')
     list_filter = ('tags__name',)
     search_fields = ('author_name', 'name')
+
+    def quantity_favorite(self, obj):
+        return obj.favorites_recipe.count()
 
     def author_name(self, obj):
         return obj.author.username

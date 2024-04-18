@@ -1,3 +1,11 @@
 [flake8]
+ignore =
+    W503
 exclude =
-    backend/foodgram_backend/settings.py
+    tests/,
+    */migrations/,
+    venv/,
+    env/
+per-file-ignores =
+    */settings.py:E501
+max-complexity = 10

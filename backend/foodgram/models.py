@@ -1,10 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+from django.db.models import CheckConstraint, F, Q
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
                         MAX_LENGTH_USERNAME)
-from .validators import validate_username
 
 
 class User(AbstractUser):
@@ -17,6 +18,8 @@ class User(AbstractUser):
         last_name (str): Фамилия пользователя.
         email (str): Email адрес пользователя.
     """
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["first_name", "last_name", "username"]
 
     username = models.CharField(
         verbose_name="Логин",
@@ -24,21 +27,34 @@ class User(AbstractUser):
         unique=True,
         validators=[
             UnicodeUsernameValidator(),
-            validate_username
         ]
     )
     first_name = models.CharField(
         verbose_name="Имя",
         max_length=MAX_LENGTH_NAME,
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Zа-яА-Я\s]+$",
+                message="Имя может содержать только буквы и пробелы.",
+                code="invalid_first_name"
+            )
+        ]
     )
     last_name = models.CharField(
         verbose_name="Фамилия",
         max_length=MAX_LENGTH_NAME,
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Zа-яА-Я\s]+$",
+                message="Фамилия может содержать только буквы и пробелы.",
+                code="invalid_last_name"
+            )
+        ]
     )
     email = models.EmailField(
         verbose_name="Email пользователя",
         max_length=MAX_LENGTH_EMAIL,
-        unique=True,
+        unique=True
     )
 
     class Meta:
@@ -62,7 +78,17 @@ class Tag(models.Model):
     name = models.CharField(
         "Название", max_length=MAX_LENGTH_NAME, unique=True
     )
-    color = models.CharField("Цветовой код", max_length=7)
+    color = models.CharField(
+        "Цветовой код",
+        max_length=7,
+        validators=[
+            RegexValidator(
+                regex=r"^#[a-fA-F0-9]{6}$",
+                message="Цветовой код должен быть в формате HEX.",
+                code="invalid_color_code"
+            )
+        ]
+    )
     slug = models.SlugField("slug", max_length=MAX_LENGTH_SLUG, unique=True)
 
     class Meta:
@@ -88,6 +114,7 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = "ингредиент"
         verbose_name_plural = "Ингредиенты"
+        unique_together = ["name", "measurement_unit"]
 
     def __str__(self):
         return self.name
@@ -118,7 +145,13 @@ class Recipe(models.Model):
         through="IngredientRecipe",
     )
     tags = models.ManyToManyField(Tag)
-    cooking_time = models.PositiveIntegerField()
+    cooking_time = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)]
+    )
+    pub_date = models.DateTimeField(
+        verbose_name="Дата публикации рецепта",
+        auto_now_add=True,
+    )
 
     class Meta:
         verbose_name = "рецепт"
@@ -138,13 +171,18 @@ class IngredientRecipe(models.Model):
         amount (int): Количество ингредиента в рецепте.
     """
 
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='+'
+    )
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    amount = models.IntegerField()
+    amount = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = "ингредиент для рецепта"
         verbose_name_plural = "Ингредиенты для рецепта"
+        unique_together = ("ingredient", "recipe")
 
     def __str__(self):
         return f"{self.ingredient} - {self.amount}"
@@ -160,7 +198,7 @@ class Favorite(models.Model):
     """
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="favorites_user"
+        User, on_delete=models.CASCADE, related_name="+"
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name="favorites_recipe"
@@ -169,6 +207,7 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные"
+        unique_together = ('user', 'recipe')
 
     def __str__(self):
         return f"{self.recipe} в избранном у пользователя {self.user}"
@@ -184,7 +223,7 @@ class Cart(models.Model):
     """
 
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="cart_user"
+        User, on_delete=models.CASCADE, related_name="+"
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name="cart_recipe"
@@ -218,23 +257,26 @@ class Subscription(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="follower",
+        related_name="subscriber",
         verbose_name="Подписчик",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="subscribers",
+        related_name="author",
         verbose_name="Автор",
     )
 
     class Meta:
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
-
         constraints = [
             models.UniqueConstraint(
                 fields=["author", "user"], name="unique_subscription"
+            ),
+            CheckConstraint(
+                check=~Q(user=F('author')),
+                name='different_user_and_author'
             )
         ]
 
