@@ -32,6 +32,7 @@ class CustomUserViewSet(UserViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_permissions(self):
+        """Права доступа."""
         if self.action == 'me':
             self.permission_classes = [permissions.IsAuthenticated]
         return super().get_permissions()
@@ -184,6 +185,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_name="download_shopping_cart",
     )
     def download_shopping_cart(self, request):
+        """Метод скачивания списка покупок."""
         shopping_cart = Cart.objects.filter(user=self.request.user)
         recipes = [item.recipe.id for item in shopping_cart]
         buy = (
