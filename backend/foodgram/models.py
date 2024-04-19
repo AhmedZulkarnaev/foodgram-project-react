@@ -5,7 +5,8 @@ from django.db import models
 from django.db.models import CheckConstraint, F, Q
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
-                        MAX_LENGTH_USERNAME)
+                        MAX_LENGTH_USERNAME, MAX_LENGTH_COLOR)
+from .validators import FIELD_VALIDATOR
 
 
 class User(AbstractUser):
@@ -32,24 +33,12 @@ class User(AbstractUser):
     first_name = models.CharField(
         verbose_name="Имя",
         max_length=MAX_LENGTH_NAME,
-        validators=[
-            RegexValidator(
-                regex=r"^[a-zA-Zа-яА-Я\s]+$",
-                message="Имя может содержать только буквы и пробелы.",
-                code="invalid_first_name"
-            )
-        ]
+        validators=[FIELD_VALIDATOR]
     )
     last_name = models.CharField(
         verbose_name="Фамилия",
         max_length=MAX_LENGTH_NAME,
-        validators=[
-            RegexValidator(
-                regex=r"^[a-zA-Zа-яА-Я\s]+$",
-                message="Фамилия может содержать только буквы и пробелы.",
-                code="invalid_last_name"
-            )
-        ]
+        validators=[FIELD_VALIDATOR]
     )
     email = models.EmailField(
         verbose_name="Email пользователя",
@@ -76,14 +65,17 @@ class Tag(models.Model):
     """
 
     name = models.CharField(
-        "Название", max_length=MAX_LENGTH_NAME, unique=True
+        "Название",
+        max_length=MAX_LENGTH_NAME,
+        unique=True,
+        validators=[FIELD_VALIDATOR]
     )
     color = models.CharField(
         "Цветовой код",
-        max_length=7,
+        max_length=MAX_LENGTH_COLOR,
         validators=[
             RegexValidator(
-                regex=r"^#[a-fA-F0-9]{6}$",
+                regex=r"^#[a-fA-F0-9]*$",
                 message="Цветовой код должен быть в формате HEX.",
                 code="invalid_color_code"
             )
@@ -108,13 +100,21 @@ class Ingredient(models.Model):
         measurement_unit (str): Единица измерения ингредиента.
     """
 
-    name = models.CharField(max_length=MAX_LENGTH_NAME)
+    name = models.CharField(
+        max_length=MAX_LENGTH_NAME,
+        validators=[FIELD_VALIDATOR]
+    )
     measurement_unit = models.CharField(max_length=MAX_LENGTH_NAME)
 
     class Meta:
         verbose_name = "ингредиент"
         verbose_name_plural = "Ингредиенты"
-        unique_together = ["name", "measurement_unit"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='unique_name_measurement_unit'
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -140,10 +140,6 @@ class Recipe(models.Model):
     name = models.CharField(max_length=MAX_LENGTH_NAME)
     image = models.ImageField(upload_to="recipe_images/")
     text = models.TextField()
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        through="IngredientRecipe",
-    )
     tags = models.ManyToManyField(Tag)
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(1)]
@@ -178,7 +174,12 @@ class IngredientRecipe(models.Model):
     class Meta:
         verbose_name = "ингредиент для рецепта"
         verbose_name_plural = "Ингредиенты для рецепта"
-        unique_together = ("ingredient", "recipe")
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'],
+                name='unique_ingredient_recipe'
+            )
+        ]
 
     def __str__(self):
         return f"{self.ingredient} - {self.amount}"
@@ -203,7 +204,12 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные"
-        unique_together = ('user', 'recipe')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_user_recipe'
+            )
+        ]
 
     def __str__(self):
         return f"{self.recipe} в избранном у пользователя {self.user}"

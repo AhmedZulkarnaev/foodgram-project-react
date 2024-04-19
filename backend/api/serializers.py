@@ -9,22 +9,7 @@ from foodgram.models import (
 )
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
-    """Сериализатор для пользовательской модели."""
-
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "username",
-            "first_name",
-            "last_name",
-            "email",
-            "password",
-        )
-
-
-class CustomUserSerializer(UserCreateSerializer):
+class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для пользовательской модели."""
 
     is_subscribed = serializers.SerializerMethodField()

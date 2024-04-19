@@ -161,7 +161,7 @@ AUTH_USER_MODEL = "foodgram.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+        "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
@@ -175,12 +175,11 @@ DJOSER = {
     "LOGIN_FIELD": "email",
     "HIDE_USERS": False,
     "SERIALIZERS": {
-        "user_create": "api.serializers.CustomUserCreateSerializer",
-        "user": "api.serializers.CustomUserSerializer",
-        "current_user": "api.serializers.CustomUserSerializer",
+        "user": "api.serializers.UserSerializer",
+        "current_user": "api.serializers.UserSerializer",
     },
     "PERMISSIONS": {
         "user": ["djoser.permissions.CurrentUserOrAdminOrReadOnly"],
-        "user_list": ["rest_framework.permissions.AllowAny"],
+        "user_list": ["rest_framework.permissions.AllowAny"]
     },
 }

@@ -20,7 +20,7 @@ from .serializers import (
 )
 
 
-class CustomUserViewSet(UserViewSet):
+class UserViewSet(UserViewSet):
     """
     ViewSet для пользователей.
 
@@ -64,20 +64,17 @@ class CustomUserViewSet(UserViewSet):
         """Подписка на автора."""
         user = self.request.user
         author = get_object_or_404(User, pk=id)
-
         if user == author:
             return Response(
                 {"errors": "Нельзя подписаться или отписаться от себя!"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         if self.request.method == "POST":
             if Subscription.objects.filter(user=user, author=author).exists():
                 return Response(
                     {"errors": "Подписка уже оформлена!"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
             queryset = Subscription.objects.create(author=author, user=user)
             serializer = SubscriptionListSerializer(
                 queryset, context={"request": request}
@@ -92,14 +89,11 @@ class CustomUserViewSet(UserViewSet):
                     {"errors": "Вы уже отписаны!"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
             subscription = get_object_or_404(
                 Subscription, user=user, author=author
             )
             subscription.delete()
-
             return Response(status=status.HTTP_204_NO_CONTENT)
-
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
