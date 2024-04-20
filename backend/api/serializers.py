@@ -38,6 +38,30 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         model = Subscription
         fields = "__all__"
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Subscription.objects.all(),
+                fields=("author", "user"),
+                message="Вы уже подписаны на этого автора"
+            )
+        ]
+
+    def validate(self, data):
+        """Проверяем, что пользователь не подписывается на самого себя."""
+        user = data["user"]
+        author = data["author"]
+        if user == author:
+            raise serializers.ValidationError(
+                "Нельзя подписаться на самого себя."
+            )
+        existing_subscription = Subscription.objects.filter(
+            user=user, author=author).exists()
+        if existing_subscription:
+            raise serializers.ValidationError(
+                "Вы уже отписаны от этого автора."
+            )
+
+        return data
 
 
 class SubscriptionListSerializer(serializers.ModelSerializer):

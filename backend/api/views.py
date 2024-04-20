@@ -16,8 +16,10 @@ from .filters import RecipeFilter
 from .serializers import (
     IngredientSerializer, RecipeCreateSerializer,
     ShortInfoRecipeSerializer, SubscriptionListSerializer,
-    TagSerializer
+    TagSerializer, SubscriptionSerializer
 )
+# Не понимаю почему избыточно, попробовал сделать без этого,
+# не получилось, либо же придется менять всю логику
 
 
 class UserViewSet(UserViewSet):
@@ -33,7 +35,7 @@ class UserViewSet(UserViewSet):
 
     def get_permissions(self):
         """Права доступа."""
-        if self.action == 'me':
+        if self.action == "me":
             self.permission_classes = [permissions.IsAuthenticated]
         return super().get_permissions()
 
@@ -64,36 +66,30 @@ class UserViewSet(UserViewSet):
         """Подписка на автора."""
         user = self.request.user
         author = get_object_or_404(User, pk=id)
-        if user == author:
-            return Response(
-                {"errors": "Нельзя подписаться или отписаться от себя!"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         if self.request.method == "POST":
-            if Subscription.objects.filter(user=user, author=author).exists():
-                return Response(
-                    {"errors": "Подписка уже оформлена!"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            serializer = SubscriptionSerializer(
+                data={"user": user.id, "author": author.id}
+            )
+            serializer.is_valid(raise_exception=True)
             queryset = Subscription.objects.create(author=author, user=user)
-            serializer = SubscriptionListSerializer(
+            data_subscribe = SubscriptionListSerializer(
                 queryset, context={"request": request}
             )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+            return Response(
+                data_subscribe.data, status=status.HTTP_201_CREATED
+            )
         if self.request.method == "DELETE":
-            if not Subscription.objects.filter(
-                user=user, author=author
-            ).exists():
+            try:
+                subscription = get_object_or_404(
+                    Subscription, user=user, author=author
+                )
+                subscription.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Exception as e:
                 return Response(
-                    {"errors": "Вы уже отписаны!"},
+                    {"errors": f"Ошибка: {e}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            subscription = get_object_or_404(
-                Subscription, user=user, author=author
-            )
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
@@ -231,5 +227,5 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filter_backends = (filters.SearchFilter, )
-    search_fields = ('^name', )
+    search_fields = ("^name", )
     pagination_class = None

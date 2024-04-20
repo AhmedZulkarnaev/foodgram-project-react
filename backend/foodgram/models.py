@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
-from django.db.models import CheckConstraint, F, Q
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
                         MAX_LENGTH_USERNAME, MAX_LENGTH_COLOR)
@@ -276,10 +275,10 @@ class Subscription(models.Model):
             models.UniqueConstraint(
                 fields=["author", "user"], name="unique_subscription"
             ),
-            CheckConstraint(
-                check=~Q(user=F('author')),
-                name='different_user_and_author'
-            )
+            models.CheckConstraint(
+                check=~models.Q(user=models.F("author")),
+                name="user_cannot_follow_himself",
+            ),
         ]
 
     def __str__(self):
