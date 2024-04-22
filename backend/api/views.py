@@ -2,12 +2,11 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
 from api.permissions import IsAuthorOrReadOnly
+
 from foodgram.models import (
     Cart, Favorite, Ingredient, IngredientRecipe,
     Recipe, Subscription, Tag, User
@@ -18,11 +17,10 @@ from .serializers import (
     ShortInfoRecipeSerializer, SubscriptionListSerializer,
     TagSerializer, SubscriptionSerializer
 )
-# Не понимаю почему избыточно, попробовал сделать без этого,
-# не получилось, либо же придется менять всю логику
+from .paginations import PageLimitPagination
 
 
-class UserViewSet(UserViewSet):
+class SubscriptionsViewSet(viewsets.ViewSet):
     """
     ViewSet для пользователей.
 
@@ -30,19 +28,11 @@ class UserViewSet(UserViewSet):
     Так же предоставляет методы для получения информации о текущем пользователе
     и изменения пароля.
     """
-
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def get_permissions(self):
-        """Права доступа."""
-        if self.action == "me":
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super().get_permissions()
+    permission_classes = [permissions.IsAuthenticated]
 
     @action(
         detail=False,
-        methods=("get",),
-        permission_classes=(permissions.IsAuthenticated,),
+        methods=["get"],
         url_path="subscriptions",
         url_name="subscriptions",
     )
@@ -50,47 +40,46 @@ class UserViewSet(UserViewSet):
         """Список авторов, на которых подписан пользователь."""
         user = self.request.user
         queryset = user.subscriber.all()
-        pages = self.paginate_queryset(queryset)
+        paginator = PageLimitPagination()
+        pages = paginator.paginate_queryset(queryset, request)
         serializer = SubscriptionListSerializer(
             pages, many=True, context={"request": request}
         )
-        return self.get_paginated_response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
 
-    @action(
-        detail=True,
-        methods=("post", "delete"),
-        url_path="subscribe",
-        url_name="subscribe",
-    )
-    def subscribe(self, request, id=None):
+    @action(detail=True,
+            methods=["post"],
+            url_path="subscribe",
+            url_name="subscribe")
+    def subscribe(self, request, pk=None):
         """Подписка на автора."""
         user = self.request.user
-        author = get_object_or_404(User, pk=id)
-        if self.request.method == "POST":
-            serializer = SubscriptionSerializer(
-                data={"user": user.id, "author": author.id}
-            )
-            serializer.is_valid(raise_exception=True)
-            queryset = Subscription.objects.create(author=author, user=user)
-            data_subscribe = SubscriptionListSerializer(
-                queryset, context={"request": request}
-            )
+        author = get_object_or_404(User, pk=pk)
+        serializer = SubscriptionSerializer(
+            data={"user": user.id, "author": author.id})
+        serializer.is_valid(raise_exception=True)
+        queryset = Subscription.objects.create(author=author, user=user)
+        data_subscribe = SubscriptionListSerializer(
+            queryset, context={"request": request})
+        return Response(data_subscribe.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True,
+            methods=['delete'],
+            url_path='subscribe',
+            url_name='unsubscribe')
+    def unsubscribe(self, request, pk=None):
+        """Отписка от автора."""
+        user = self.request.user
+        author = get_object_or_404(User, pk=pk)
+        try:
+            subscription = get_object_or_404(
+                Subscription, user=user, author=author)
+            subscription.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
             return Response(
-                data_subscribe.data, status=status.HTTP_201_CREATED
+                {"errors": f"Ошибка: {e}"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if self.request.method == "DELETE":
-            try:
-                subscription = get_object_or_404(
-                    Subscription, user=user, author=author
-                )
-                subscription.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            except Exception as e:
-                return Response(
-                    {"errors": f"Ошибка: {e}"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

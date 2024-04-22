@@ -15,6 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+
 dotenv_path = Path("../infra/.env")
 load_dotenv(dotenv_path=dotenv_path)
 
@@ -143,6 +144,8 @@ CSV_FILES_DIR = os.path.join(BASE_DIR, "data")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+AUTH_USER_MODEL = "foodgram.User"
+
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
@@ -155,20 +158,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "api.paginations.PageLimitPagination",
     "PAGE_SIZE": 6,
-}
-
-AUTH_USER_MODEL = "foodgram.User"
-
-REST_FRAMEWORK = {
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
-    ],
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-    ],
     "SEARCH_PARAM": "name",
-    "DEFAULT_PAGINATION_CLASS": "api.paginations.PageLimitPagination",
-    "PAGE_SIZE": 6,
 }
 
 DJOSER = {
@@ -179,7 +169,7 @@ DJOSER = {
         "current_user": "api.serializers.UserSerializer",
     },
     "PERMISSIONS": {
-        "user": ["djoser.permissions.CurrentUserOrAdminOrReadOnly"],
+        "user": ["rest_framework.permissions.AllowAny"],
         "user_list": ["rest_framework.permissions.AllowAny"]
     },
 }

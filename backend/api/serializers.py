@@ -27,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         request_user_id = self.context["request"].user.id
-        return obj.subscriber.filter(user=request_user_id).exists()
+        return obj.author.filter(user=request_user_id).exists()
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -38,13 +38,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         model = Subscription
         fields = "__all__"
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=("author", "user"),
-                message="Вы уже подписаны на этого автора"
-            )
-        ]
 
     def validate(self, data):
         """Проверяем, что пользователь не подписывается на самого себя."""
@@ -58,9 +51,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             user=user, author=author).exists()
         if existing_subscription:
             raise serializers.ValidationError(
-                "Вы уже отписаны от этого автора."
+                "Вы уже подписаны на этого автора."
             )
-
         return data
 
 
@@ -94,7 +86,6 @@ class SubscriptionListSerializer(serializers.ModelSerializer):
             "recipes",
             "recipes_count",
         )
-        ordering = ["-id"]
         extra_kwargs = {"recipes_limit": {"write_only": True}}
 
     def get_is_subscribed(self, obj):
