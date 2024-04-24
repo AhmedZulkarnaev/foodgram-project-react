@@ -1,11 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
                         MAX_LENGTH_USERNAME, MAX_LENGTH_COLOR)
-from .validators import FIELD_VALIDATOR
+from .validators import validate_hex_color, FIELD_VALIDATOR
 
 
 class User(AbstractUser):
@@ -72,13 +72,7 @@ class Tag(models.Model):
     color = models.CharField(
         "Цветовой код",
         max_length=MAX_LENGTH_COLOR,
-        validators=[
-            RegexValidator(
-                regex=r"^#[a-fA-F0-9]*$",
-                message="Цветовой код должен быть в формате HEX.",
-                code="invalid_color_code"
-            )
-        ]
+        validators=[validate_hex_color]
     )
     slug = models.SlugField("slug", max_length=MAX_LENGTH_SLUG, unique=True)
 

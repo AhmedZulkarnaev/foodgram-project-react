@@ -11,75 +11,67 @@ from foodgram.models import (
     Cart, Favorite, Ingredient, IngredientRecipe,
     Recipe, Subscription, Tag, User
 )
-from .filters import RecipeFilter
-from .serializers import (
+from api.filters import RecipeFilter
+from api.serializers import (
     IngredientSerializer, RecipeCreateSerializer,
     ShortInfoRecipeSerializer, SubscriptionListSerializer,
     TagSerializer, SubscriptionSerializer
 )
-from .paginations import PageLimitPagination
+from api.paginations import PageLimitPagination
 
 
-class SubscriptionsViewSet(viewsets.ViewSet):
+class SubscriptionsViewSet(viewsets.GenericViewSet):
     """
-    ViewSet для пользователей.
-
-    Позволяет выполнять операции CRUD для пользователей.
-    Так же предоставляет методы для получения информации о текущем пользователе
-    и изменения пароля.
+    GenericViewSet для подписки/отписки пользователей.
     """
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageLimitPagination
 
     @action(
         detail=False,
-        methods=["get"],
-        url_path="subscriptions",
-        url_name="subscriptions",
+        methods=['get'],
+        url_path='subscriptions',
+        url_name='subscriptions',
     )
     def subscriptions(self, request):
-        """Список авторов, на которых подписан пользователь."""
         user = self.request.user
         queryset = user.subscriber.all()
-        paginator = PageLimitPagination()
-        pages = paginator.paginate_queryset(queryset, request)
+        page = self.paginate_queryset(queryset)
         serializer = SubscriptionListSerializer(
-            pages, many=True, context={"request": request}
+            page, many=True, context={"request": request}
         )
-        return paginator.get_paginated_response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
-    @action(detail=True,
-            methods=["post"],
-            url_path="subscribe",
-            url_name="subscribe")
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="subscribe",
+        url_name="subscribe",
+    )
     def subscribe(self, request, pk=None):
         """Подписка на автора."""
         user = self.request.user
         author = get_object_or_404(User, pk=pk)
-        serializer = SubscriptionSerializer(
-            data={"user": user.id, "author": author.id})
-        serializer.is_valid(raise_exception=True)
-        queryset = Subscription.objects.create(author=author, user=user)
-        data_subscribe = SubscriptionListSerializer(
-            queryset, context={"request": request})
-        return Response(data_subscribe.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=True,
-            methods=['delete'],
-            url_path='subscribe',
-            url_name='unsubscribe')
-    def unsubscribe(self, request, pk=None):
-        """Отписка от автора."""
-        user = self.request.user
-        author = get_object_or_404(User, pk=pk)
-        try:
-            subscription = get_object_or_404(
-                Subscription, user=user, author=author)
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
+        if self.request.method == "POST":
+            serializer = SubscriptionSerializer(
+                data={"user": user.id, "author": author.id})
+            serializer.is_valid(raise_exception=True)
+            queryset = Subscription.objects.create(author=author, user=user)
+            data_subscribe = SubscriptionListSerializer(
+                queryset, context={"request": request})
             return Response(
-                {"errors": f"Ошибка: {e}"}, status=status.HTTP_400_BAD_REQUEST
-            )
+                data_subscribe.data, status=status.HTTP_201_CREATED)
+        if self.request.method == "DELETE":
+            try:
+                subscription = get_object_or_404(
+                    Subscription, user=user, author=author)
+                subscription.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Exception as e:
+                return Response(
+                    {"errors": f"Ошибка: {e}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
