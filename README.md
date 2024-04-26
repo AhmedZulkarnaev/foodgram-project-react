@@ -1,5 +1,7 @@
 # Проект foodgram для публикации рецептов блюд.
 # Ссылка на сайт foodgramos.serveirc.com
+# Данные для админки(admin@admin.ru, admin)
+
 ## Установка
 
 1. Сначала склонируйте репозиторий:
@@ -36,14 +38,6 @@
     cd infra/
     sudo docker compose exec backend python manage.py load_ingredients_data
     ```
-
-3. Данные для админки:
-    ```bash
-    admin@admin.ru
-    admin
-    ```
-
-
 
 ## Предупреждение
 Теги создаются вручную в админке, не забудьте добавить их.
