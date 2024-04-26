@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - build_and_push_to_docker_hub
-      - build_gateway_and_push_to_docker_hu
+      - build_gateway_and_push_to_docker_hub
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
