@@ -1,6 +1,6 @@
 # Проект foodgram для публикации рецептов блюд.
 # Ссылка на сайт foodgramos.serveirc.com
-# Данные для админки(admin@admin.ru, admin)
+## Данные для админки(admin@admin.ru, admin)
 
 ## Установка
 
