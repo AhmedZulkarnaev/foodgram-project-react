@@ -82,11 +82,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     Так же предоставляет методы для добавления/удаления рецепта в избранное.
     """
 
-    queryset = Recipe.objects.all()
     permission_classes = (IsAuthorOrReadOnly,)
     serializer_class = RecipeCreateSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        return Recipe.objects.all().order_by('-created_at')
 
     def add_method(self, model, user, name, pk):
         """Метод добавления/создания объекта."""

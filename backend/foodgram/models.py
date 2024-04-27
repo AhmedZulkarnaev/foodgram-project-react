@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.forms import ValidationError
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
                         MAX_LENGTH_USERNAME, MAX_LENGTH_COLOR)
@@ -141,6 +140,7 @@ class Recipe(models.Model):
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(1)]
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "рецепт"
