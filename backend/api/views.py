@@ -74,7 +74,7 @@ class SubscriptionsViewSet(viewsets.GenericViewSet):
                 )
 
 
-class RecipeViewSet(viewsets.ModelViewSet)
+class RecipeViewSet(viewsets.ModelViewSet):
     """
     ViewSet для рецептов.
 
