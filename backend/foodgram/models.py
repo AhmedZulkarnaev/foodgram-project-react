@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.forms import ValidationError
 
 from .constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME, MAX_LENGTH_SLUG,
                         MAX_LENGTH_USERNAME, MAX_LENGTH_COLOR)
@@ -130,7 +131,10 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="recipes"
     )
-    name = models.CharField(max_length=MAX_LENGTH_NAME)
+    name = models.CharField(
+        max_length=MAX_LENGTH_NAME,
+        validators=[FIELD_VALIDATOR]
+    )
     image = models.ImageField(upload_to="recipe_images/")
     text = models.TextField()
     tags = models.ManyToManyField(Tag)
